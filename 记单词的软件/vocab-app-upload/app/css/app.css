@@ -1,0 +1,1427 @@
+/* ============================================================
+ * app.css — 全局样式
+ * ============================================================
+ * 颜色、间距等写成 CSS 变量（:root 里的 --xxx），
+ * 以后想换主题色，只改 --color-primary 这一行就行。
+ *
+ * 布局思路（从上到下）：
+ *   顶部标题栏（固定）
+ *   中间内容区（可滚动）
+ *   底部导航栏（固定）
+ * 就像微信、抖音那样的经典手机 App 布局。
+ */
+
+/* ---------- CSS 变量：全局可调参数 ---------- */
+:root {
+  /* 主题色 */
+  --color-primary: #1A73E8;            /* 科技蓝，主按钮、高亮 */
+  --color-primary-dark: #1557B0;       /* 深蓝，按下效果 */
+  --color-primary-light: #E8F0FE;      /* 浅蓝，选中背景 */
+
+  /* 背景色 */
+  --bg-page: #F5F7FA;                  /* 页面背景（极浅灰） */
+  --bg-card: #FFFFFF;                  /* 卡片背景（白） */
+  --bg-header: #FFFFFF;                /* 顶部栏背景 */
+  --bg-tabbar: #FFFFFF;                /* 底部栏背景 */
+
+  /* 文字色 */
+  --text-primary: #1F1F1F;             /* 主要文字（近黑） */
+  --text-secondary: #5F6368;           /* 次要文字（灰） */
+  --text-tertiary: #9AA0A6;            /* 提示文字（浅灰） */
+  --text-on-primary: #FFFFFF;          /* 主色背景上的白字 */
+
+  /* 边框 */
+  --border-color: #E8EAED;             /* 普通边框 */
+  --border-active: #1A73E8;            /* 选中边框 */
+
+  /* 状态色 */
+  --color-success: #1E8E3E;            /* 正确/成功（绿） */
+  --color-danger: #D93025;             /* 错误/危险（红） */
+  --color-warning: #F9AB00;            /* 警告（橙） */
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* 间距 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+
+  /* 字体（中文 PingFang SC / Noto Sans SC，英文系统默认） */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Segoe UI', Roboto, 'Inter', sans-serif;
+
+  /* 安全区域（iPhone 底部有 home 指示条，需要留出空间） */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ---------- 基础重置（让所有浏览器表现一致） ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;              /* 盒子尺寸含 padding 和 border，好算 */
+  -webkit-tap-highlight-color: transparent;  /* 去掉手机点击时的蓝色高亮 */
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;       /* 字体更平滑 */
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+input, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ---------- 顶部标题栏 ---------- */
+.app-header {
+  position: fixed;                     /* 固定在屏幕顶部，不随页面滚动 */
+  top: 0; left: 0; right: 0;
+  height: calc(52px + var(--safe-top));/* 高度 = 52px + 状态栏安全区 */
+  padding-top: var(--safe-top);
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding-left: var(--space-md);
+  z-index: 100;                        /* 在最上层，不被内容盖住 */
+}
+
+.app-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 标题右侧的难度按钮容器（只有今日页有内容） */
+.header-level {
+  display: flex;
+  align-items: center;
+  margin-left: var(--space-sm);
+}
+
+/* ---------- 主内容区 ---------- */
+.app-main {
+  /* 上边距 = 标题栏高度，下边距 = 底部栏高度，留出滚动空间 */
+  padding-top: calc(52px + var(--safe-top));
+  padding-bottom: calc(60px + var(--safe-bottom));
+  min-height: 100vh;
+  max-width: 480px;                    /* 手机宽度，大屏居中 */
+  margin: 0 auto;                      /* 左右居中（平板/桌面打开时不会拉太宽） */
+}
+
+/* 每个页面：默认隐藏，加了 active 才显示 */
+.page {
+  display: none;
+  padding: var(--space-md);
+}
+
+.page.active {
+  display: block;
+  /* 页面切换：淡入 + 轻微上移，比直接"啪"一下出现柔和很多 */
+  animation: pageIn 0.26s cubic-bezier(0.22, 0.9, 0.28, 1);
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 页内视图切换（收藏菜单 ↔ 三类列表、词典搜索结果）淡入一次。
+   写成双类名是为了压过 .page.active 的 pageIn（两者特异性相同时靠后生效）。 */
+.view-enter,
+.view-enter.view-enter {
+  animation: viewIn 0.24s cubic-bezier(0.22, 0.9, 0.28, 1);
+}
+
+@keyframes viewIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- 底部导航栏 ---------- */
+.tab-bar {
+  position: fixed;                     /* 固定在屏幕底部 */
+  bottom: 0; left: 0; right: 0;
+  height: calc(60px + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: var(--bg-tabbar);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  max-width: 480px;
+  margin: 0 auto;
+  z-index: 100;
+}
+
+.tab {
+  flex: 1;                             /* 五个标签平分宽度 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  transition: color 0.18s ease, transform 0.18s cubic-bezier(0.22, 0.9, 0.28, 1);
+}
+
+.tab.active {
+  color: var(--color-primary);         /* 选中的标签变蓝色 */
+  font-weight: 600;
+  transform: translateY(-2px);         /* 选中时轻微上浮，切换更有指向感 */
+}
+
+.tab:active {
+  transform: scale(0.94);
+}
+
+/* 标签文字：统一两个字 */
+.tab-label {
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.5px;
+}
+
+/* ---------- 通用组件：卡片 ---------- */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);  /* 极淡阴影，让卡片有层次感 */
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+/* ---------- 通用组件：按钮 ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 500;
+  transition: opacity 0.15s, transform 0.12s ease;
+}
+
+.btn:active {
+  opacity: 0.7;                        /* 按下时半透明，模拟按压反馈 */
+  transform: scale(0.97);              /* 再轻微缩一下，回弹更明显 */
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+.btn-secondary {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: var(--text-on-primary);
+}
+
+.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+/* ---------- 通用组件：输入框 ---------- */
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  outline: none;
+  /* 横向手势交给 JS（滑动全选），纵向仍然允许滚动页面 */
+  touch-action: pan-y;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+}
+
+/* ---------- 空状态（还没数据时的提示） ---------- */
+.empty-state {
+  text-align: center;
+  padding: var(--space-lg) var(--space-md);
+  color: var(--text-tertiary);
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-md);
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 24px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-text {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* ---------- 单词卡片（已学/词典/今日学习用） ---------- */
+/* 一行 = 卡片 + 卡片外侧右边的垃圾桶 */
+.word-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.word-card {
+  flex: 1;                             /* 占满除垃圾桶外的宽度 */
+  min-width: 0;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* 单词 + 右侧蓝底音标 同一行 */
+.word-card .word-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;                     /* 音标太长时自动换行，不撑破卡片 */
+  gap: var(--space-sm);
+  margin-bottom: 6px;
+}
+
+.word-card .word {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 单词下面那一行：放喇叭按钮 */
+.word-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+/* 卡片外侧右边的垃圾桶按钮 */
+.trash-outside {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: var(--bg-page);
+  transition: background 0.15s, color 0.15s, transform 0.12s ease;
+}
+
+.icon-btn:active {
+  transform: scale(0.9);
+}
+
+.icon-btn:active {
+  background: var(--border-color);
+}
+
+.icon-btn.danger {
+  color: var(--color-danger);
+}
+
+/* 喇叭播放动画：读的时候两道音波依次脉冲 */
+.speak-btn .wave {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes wavePulse {
+  0%   { opacity: 0;   transform: scale(0.85); }
+  35%  { opacity: 1;   transform: scale(1); }
+  100% { opacity: 0;   transform: scale(1.1); }
+}
+
+.speak-btn.playing {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.speak-btn.playing .wave {
+  animation: wavePulse 0.9s ease-in-out infinite;
+}
+
+.speak-btn.playing .wave.w2 {
+  animation-delay: 0.15s;
+}
+
+/* 音标：蓝色底小胶囊，显示在单词右侧 */
+.phonetic-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.word-card .translation {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.word-card .word-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.word-card .word-actions .btn {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+/* ============================================================
+ * 今日页：确定按钮 / 词数 / 加词虚线框
+ * ============================================================ */
+
+/* 右上角「确定」按钮 */
+.confirm-btn {
+  padding: 5px 16px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.32);
+  transition: transform 0.15s ease, background 0.15s;
+}
+
+.confirm-btn:active {
+  transform: scale(0.94);
+  background: var(--color-primary-dark);
+}
+
+/* 已确定后变成不可点的状态标签 */
+.confirm-done {
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* 单词卡上方的「已有 N 个词」 */
+.today-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-sm);
+}
+
+/* 加词虚线框：与单词卡等大
+   词卡在 .word-row 里，右边留了 34px 垃圾桶 + 8px 间距，
+   所以这里的宽度要扣掉同样的宽度，才能和上面的词卡左右对齐。 */
+.add-card {
+  width: calc(100% - 34px - var(--space-sm));
+  min-height: 96px;                    /* 与一张词卡视觉高度接近 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed #B9C6D8;
+  border-radius: var(--radius-md);
+  background: transparent;
+  margin-bottom: var(--space-sm);
+  transition: border-color 0.18s, background 0.18s;
+}
+
+.add-card:active {
+  border-color: var(--color-primary);
+  background: rgba(26, 115, 232, 0.04);
+}
+
+/* 蓝色圆圈包着的加号 */
+.add-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgba(26, 115, 232, 0.35);
+  transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.add-card:active .add-circle {
+  transform: scale(0.9);
+}
+
+/* ============================================================
+ * 加词弹层（底部抽屉）
+ * ============================================================ */
+.sheet-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: maskIn 0.2s ease;
+}
+
+@keyframes maskIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border-radius: 18px 18px 0 0;
+  padding: var(--space-md);
+  padding-bottom: calc(var(--space-md) + var(--safe-bottom));
+  animation: sheetUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 关闭时：面板往下滑 + 遮罩淡出（JS 加 .closing，180ms 后移除节点） */
+.sheet-mask.closing {
+  animation: maskOut 0.2s ease forwards;
+  pointer-events: none;
+}
+
+.sheet-mask.closing .sheet {
+  animation: sheetDown 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes maskOut {
+  to { opacity: 0; }
+}
+
+@keyframes sheetDown {
+  to { transform: translateY(100%); opacity: 0.6; }
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(24px); opacity: 0.6; }
+  to   { transform: none; opacity: 1; }
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sheet-close {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-page);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.sheet-body {
+  margin-top: var(--space-sm);
+  overflow-y: auto;
+  overflow-x: hidden;                  /* 防止长释义撑出横向滚动条 */
+  -webkit-overflow-scrolling: touch;
+  /* 占满剩余高度并可滚动，让下面的「保存」按钮始终固定住，
+     不会因为列表变长被推走、也不会在滑动列表时误点到它 */
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 搜索结果里的一行 */
+.pick-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  overflow: hidden;
+}
+
+.pick-row:last-child {
+  border-bottom: none;
+}
+
+.pick-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.pick-word {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pick-word .phonetic-pill {
+  margin-left: 6px;
+  font-size: 11px;
+  padding: 1px 8px;
+}
+
+.pick-trans {
+  display: block;                      /* span 要变成块级，省略号才生效 */
+  width: 100%;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pick-add {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.pick-add.disabled {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+/* 已学页：日期按钮（点一下才展开当天单词） */
+.date-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: var(--space-sm) 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: background 0.15s, color 0.15s;
+}
+
+.date-head:active {
+  background: var(--bg-page);
+}
+
+/* 日期那一行：日期按钮 + 右侧外侧的删除按钮 */
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.date-row .date-head {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  margin: 0;
+}
+
+.date-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-chev {
+  color: var(--text-tertiary);
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), color 0.15s;
+}
+
+.date-head.open {
+  color: var(--color-primary);
+}
+
+.date-head.open .date-chev {
+  transform: rotate(90deg);
+  color: var(--color-primary);
+}
+
+.date-head .date-count {
+  font-weight: 400;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+/* 当天单词的容器：默认收起，加了 .open 才展开 */
+.date-body {
+  display: none;
+}
+
+.date-body.open {
+  display: block;
+  animation: dateBodyIn 0.22s ease;
+}
+
+@keyframes dateBodyIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* 考核成绩单：每一条结果 */
+.result-row {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.result-row:last-child {
+  border-bottom: none;
+}
+
+.result-mark {
+  flex: 0 0 18px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.result-row.wrong .result-mark { color: var(--color-danger); }
+.result-row.right .result-mark { color: var(--color-success); }
+
+.result-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-word {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.result-word .phonetic-pill {
+  font-size: 11px;
+  padding: 1px 8px;
+}
+
+.result-trans {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.result-yours {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+/* ============================================================
+ * 同义词手动编辑
+ * ============================================================ */
+
+/* 同义词组卡片（手动组和自动组共用同一种卡片） */
+.syn-card {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;                    /* 外层 .word-row 已经有间距了 */
+  position: relative;                  /* 给右上角星标定位 */
+  padding-right: 40px;
+}
+
+.syn-card-title {
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 组里的词胶囊 */
+.syn-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* 编辑器里可点的胶囊：点击把词移出这一组
+   手机手指粗，所以做得比显示尺寸大一圈（至少 36px 高） */
+.syn-chip.editable {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 14px;
+  gap: 6px;
+  border: 1px solid rgba(26, 115, 232, 0.18);
+  transition: transform 0.15s ease, background 0.15s;
+}
+
+.syn-chip.editable:active {
+  transform: scale(0.95);
+  background: #d7e6fb;
+}
+
+/* 编辑器里「这一组的词」区域 */
+.syn-selected {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-page);
+  margin-bottom: var(--space-sm);
+  min-height: 52px;
+}
+
+/* ============================================================
+ * 俗语卡片：原词 / 含义 / 例句 用不同底色区分
+ * ============================================================ */
+.idiom-card {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;                    /* 外层 .word-row 已经有间距了 */
+  position: relative;                  /* 给右上角星标定位 */
+  padding-right: 40px;                 /* 右边留出星标的位置 */
+}
+
+/* 原词：深色加粗，最显眼 */
+.idiom-text {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+/* 含义：蓝底胶囊，和原词拉开层次 */
+.idiom-meaning {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* 例句：左侧竖线 + 浅灰底 + 斜体，一眼看出是引用 */
+.idiom-example {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-left: 3px solid #DDE1E6;
+  border-radius: 0 8px 8px 0;
+  background: var(--bg-page);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+/* ============================================================
+ * 收藏（星星按钮 + 我的页的入口行 + 返回按钮）
+ * ============================================================ */
+
+/* 单词卡右上角的五角星 */
+.star-btn {
+  flex: 0 0 auto;
+  margin-left: auto;                   /* 推到这一行最右 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text-tertiary);         /* 未收藏：灰色空心星 */
+  transition: color 0.15s, transform 0.15s, background 0.15s;
+}
+
+.star-btn.on {
+  color: #F5A623;                      /* 已收藏：黄色实心星 */
+}
+
+.star-btn:active {
+  transform: scale(0.86);
+  background: rgba(245, 166, 35, 0.14);
+}
+
+/* 俗语卡 / 同义词卡上的星标：绝对定位在卡片右上角 */
+.corner-star {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  margin-left: 0;
+}
+
+/* 收藏后整张卡片变黄底（星标自己的颜色不受影响） */
+.word-card.fav,
+.idiom-card.fav,
+.syn-card.fav {
+  background: #FFF7DB;
+  box-shadow: 0 1px 4px rgba(245, 166, 35, 0.22);
+}
+
+/* 「我的」页里的可点行（收藏入口） */
+.nav-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 6px 0;
+  text-align: left;
+}
+
+.nav-row:active {
+  opacity: 0.6;
+}
+
+/* ============================================================
+ * 个人资料（头像 + 用户名）
+ * ============================================================ */
+.profile-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.profile-row:active {
+  opacity: 0.7;
+}
+
+/* 圆形头像：emoji 或上传的图片都往这里塞 */
+.avatar {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-light);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-lg {
+  width: 84px;
+  height: 84px;
+  font-size: 42px;
+}
+
+.profile-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profile-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 抽屉里的头像预览 */
+.profile-preview {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 14px;
+}
+
+/* ---------- 头像裁剪：原图 + 圆形取景框 ---------- */
+.crop-stage {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  margin: 4px auto 10px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #2a2a2a;
+  touch-action: none;                  /* 手势全交给 JS，页面别跟着动 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.crop-stage img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: none;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* 圆形取景框：外面压暗，一眼看出最终头像长什么样 */
+.crop-box {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.crop-zoom {
+  width: 100%;
+  accent-color: var(--color-primary);
+}
+
+/* 预设头像选择 */
+.avatar-grid {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.avatar-opt {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 23px;
+  background: var(--bg-page);
+  border: 2px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.avatar-opt.on {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+/* 「上传」按钮（包着一个隐藏的 file input） */
+.avatar-upload {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-page);
+  border: 1px dashed var(--border-color);
+  cursor: pointer;
+}
+
+.nav-row-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.nav-chev {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-tertiary);
+}
+
+/* 收藏列表顶部的返回按钮 */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+  padding: 7px 14px 7px 10px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.back-btn:active {
+  opacity: 0.7;
+}
+
+/* ============================================================
+ * 今日页顶部：难度选择器（左上角小按钮 + 纵向弹出菜单）
+ * ============================================================ */
+.today-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+  min-height: 30px;
+}
+
+.today-date {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* ============================================================
+ * 顶部标题栏里的难度按钮（「今日」右边）
+ *   收起时只显示当前档位一个字（易/中/难），蓝底白字；
+ *   点一下向右侧横向弹出三个选项。
+ * ============================================================ */
+.level-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.level-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--color-primary);     /* 原来的蓝色底色 */
+  color: var(--text-on-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s;
+}
+
+.level-trigger:active {
+  transform: scale(0.94);
+  box-shadow: 0 1px 4px rgba(26, 115, 232, 0.3);
+}
+
+/* 向右横向弹出的菜单：贴在按钮右边 */
+.level-menu {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 8px);
+  z-index: 120;
+  display: flex;
+  flex-direction: row;                  /* 三个选项横着排 */
+  gap: 4px;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  visibility: hidden;
+  opacity: 0;
+  /* 收起状态：往左缩一点 + 略小，像是从按钮里"抽"出来 */
+  transform: translateY(-50%) translateX(-10px) scale(0.9);
+  transform-origin: left center;
+  pointer-events: none;
+  transition: opacity 0.2s ease,
+              transform 0.24s cubic-bezier(0.2, 0.9, 0.25, 1),
+              visibility 0.2s;
+}
+
+.level-menu.open {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(-50%) translateX(0) scale(1);
+  pointer-events: auto;
+}
+
+.level-item {
+  min-width: 38px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  text-align: center;
+  /* 每个选项初始状态：靠左一点、略透明，展开时依次滑到位 */
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), background 0.15s;
+}
+
+.level-menu.open .level-item {
+  opacity: 1;
+  transform: none;
+}
+
+/* 依次滑入的小延迟，弹出更协调 */
+.level-menu.open .level-item:nth-child(1) { transition-delay: 0.03s; }
+.level-menu.open .level-item:nth-child(2) { transition-delay: 0.08s; }
+.level-menu.open .level-item:nth-child(3) { transition-delay: 0.13s; }
+
+.level-item:active {
+  background: var(--bg-page);
+}
+
+.level-item.active {
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+/* ---------- 标签（考试标签等） ---------- */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* ---------- 列表 ---------- */
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.list-item .item-main {
+  flex: 1;
+}
+
+.list-item .item-title {
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.list-item .item-sub {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* ---------- 进度条 ---------- */
+.progress-bar {
+  height: 6px;
+  background: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar .fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+/* ---------- 判断结果提示（考核时用） ---------- */
+.result-correct {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.result-wrong {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* ---------- 考核题面 & 参考答案 ---------- */
+.quiz-prompt {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+/* 参考答案卡：浅蓝底，和题面区分开 */
+.answer-card {
+  background: var(--color-primary-light);
+  box-shadow: none;
+}
+
+.ref-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.ref-en {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary);
+  word-break: break-word;
+}
+
+.ref-zh {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* ---------- 工具类 ---------- */
+.text-center { text-align: center; }
+.text-muted { color: var(--text-tertiary); }
+.text-sm { font-size: 13px; }
+.mt-sm { margin-top: var(--space-sm); }
+.mt-md { margin-top: var(--space-md); }
+.mb-sm { margin-bottom: var(--space-sm); }
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-sm { gap: var(--space-sm); }
+
+/* ============================================================
+ * 交互反馈：可点区域按下时轻微回弹
+ * ============================================================ */
+.nav-row,
+.pick-row,
+.back-btn,
+.sheet-close {
+  transition: transform 0.12s ease, opacity 0.15s ease;
+}
+
+.nav-row:active,
+.pick-row:active,
+.back-btn:active,
+.sheet-close:active {
+  transform: scale(0.97);
+}
+
+/* 日期行本来就有颜色过渡，这里把 transform 一起接上 */
+.date-head {
+  transition: background 0.15s, color 0.15s, transform 0.12s ease;
+}
+
+.date-head:active {
+  transform: scale(0.985);
+}
+
+/* 加号虚线框：轻按一下整块缩一点 */
+.add-card:active {
+  transform: scale(0.985);
+}
+
+/* ============================================================
+ * 无障碍：系统开了「减少动态效果」就全部关掉
+ * ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .page.active,
+  .view-enter,
+  .sheet-mask,
+  .sheet {
+    animation: none !important;
+  }
+
+  .btn,
+  .icon-btn,
+  .tab,
+  .nav-row,
+  .pick-row,
+  .back-btn,
+  .sheet-close,
+  .date-head,
+  .add-card {
+    transition: none !important;
+  }
+
+  .btn:active,
+  .icon-btn:active,
+  .tab:active,
+  .nav-row:active,
+  .pick-row:active,
+  .back-btn:active,
+  .sheet-close:active,
+  .date-head:active,
+  .add-card:active,
+  .tab.active {
+    transform: none !important;
+  }
+}

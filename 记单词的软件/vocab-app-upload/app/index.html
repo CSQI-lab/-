@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <!-- 适配手机屏幕：宽度=设备宽度，初始缩放1，禁止用户缩放（像原生App一样） -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- 主题色：影响 Safari 地址栏和状态栏的颜色 -->
+  <meta name="theme-color" content="#1A73E8">
+  <!-- iOS 主屏幕全屏：添加到主屏幕后全屏打开，不显示 Safari 地址栏 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="记单词">
+  <!-- 桌面图标：iOS 只认 PNG，不能用 SVG -->
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="assets/icon-512.png">
+  <link rel="icon" type="image/png" href="assets/icon-180.png">
+  <!-- PWA 清单文件（让浏览器认这是一个可安装的 App） -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <!-- 样式表 -->
+  <link rel="stylesheet" href="css/app.css">
+  <title>记单词</title>
+</head>
+<body>
+  <!-- 出错兜底：万一脚本崩了，直接在页面上说明原因，不再白屏 -->
+  <div id="fatal-error" style="display:none;position:relative;z-index:999;margin:12px;padding:12px;border-radius:10px;background:#FCEBEB;color:#A32D2D;font-size:13px;line-height:1.6"></div>
+
+  <!-- ====== 顶部标题栏 ====== -->
+  <!-- 标题右侧留一块位置给「难度」小按钮（只有今日页才显示，由 ui.js 填充） -->
+  <header class="app-header">
+    <h1 id="page-title">今日</h1>
+    <div id="header-level" class="header-level"></div>
+  </header>
+
+  <!-- ====== 主内容区 ====== -->
+  <!-- 四个页面叠在一起，通过 ui.js 切换 .active 类来显示其中一个 -->
+  <main class="app-main">
+    <!-- 页面1：今日学习（每天打开首先看到这里） -->
+    <section id="page-today" class="page active"></section>
+    <!-- 页面2：已学（学过的单词按日期汇总 / 俗语 / 同义词本） -->
+    <section id="page-library" class="page"></section>
+    <!-- 页面3：词典（搜索全部词库） -->
+    <section id="page-dict" class="page"></section>
+    <!-- 页面4：复习（艾宾浩斯考核） -->
+    <section id="page-review" class="page"></section>
+    <!-- 页面5：我的（收藏、备份） -->
+    <section id="page-settings" class="page"></section>
+  </main>
+
+  <!-- ====== 底部导航栏（五个标签页，统一只显示两个字） ====== -->
+  <nav class="tab-bar">
+    <button class="tab active" data-page="today">
+      <span class="tab-label">今日</span>
+    </button>
+    <button class="tab" data-page="library">
+      <span class="tab-label">已学</span>
+    </button>
+    <button class="tab" data-page="dict">
+      <span class="tab-label">词典</span>
+    </button>
+    <button class="tab" data-page="review">
+      <span class="tab-label">复习</span>
+    </button>
+    <button class="tab" data-page="settings">
+      <span class="tab-label">我的</span>
+    </button>
+  </nav>
+
+  <!-- ====== 业务脚本（ES Module 方式引入，ui.js 是总入口） ====== -->
+  <script type="module" src="js/ui.js"></script>
+
+  <script>
+    // 【离线开关】注册 Service Worker —— 这是"断网也能用"的关键一步。
+    // 浏览器规定：只在 HTTPS 或 localhost 下允许注册，所以正式使用需要 HTTPS 网址。
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        // updateViaCache:'none' —— 连 sw.js 本身也不许用 HTTP 缓存，
+        // 否则旧缓存会把"该更新了"这件事一直挡住。
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+          .then(function (reg) {
+            console.log('[离线] 已启用，断网也能打开');
+            // 检测到新版 Service Worker 接管时（说明代码更新了），
+            // 自动刷新一次页面，让用户立刻用上新版本
+            var refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', function () {
+              if (refreshing) return;
+              refreshing = true;
+              location.reload();
+            });
+          })
+          .catch(function (err) { console.log('[离线] 注册失败：', err); });
+      });
+    }
+
+    // 【出错提示】脚本加载失败 / 运行时报错，直接显示在页面顶部
+    function showFatal(msg) {
+      var box = document.getElementById('fatal-error');
+      if (!box) return;
+      box.style.display = 'block';
+      box.textContent = '程序出错了：' + msg;
+    }
+
+    // 【缓存自动修复】升级后如果浏览器里混着新旧文件，
+    // ES Module 会报"does not provide an export ..."之类的错。
+    // 这时自动清一次离线缓存并刷新，用户不用手动做任何事。
+    // sessionStorage 做标记，一个会话里只修一次，避免死循环。
+    function resetCacheOnce() {
+      try {
+        if (sessionStorage.getItem('vocabCacheReset')) return false;
+        sessionStorage.setItem('vocabCacheReset', '1');
+      } catch (err) { return false; }
+
+      var reload = function () { location.reload(); };
+      if (window.caches) {
+        caches.keys()
+          .then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          })
+          .then(reload, reload);
+      } else {
+        reload();
+      }
+      return true;
+    }
+
+    window.addEventListener('error', function (e) {
+      var msg = e.message || '';
+      if (/does not provide an export|Failed to fetch dynamically imported module|Unexpected token 'export'/.test(msg)) {
+        if (resetCacheOnce()) return;   // 交给自动修复，不显示红框
+      }
+      showFatal(msg || '有文件加载失败');
+    }, true);
+    window.addEventListener('unhandledrejection', function (e) {
+      showFatal(String(e.reason));
+    });
+  </script>
+</body>
+</html>

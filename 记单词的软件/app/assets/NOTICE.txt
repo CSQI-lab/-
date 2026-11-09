@@ -1,0 +1,20 @@
+记单词 App — 第三方数据声明
+=====================================
+
+本应用内置以下开源数据：
+
+1. ECDICT — 英汉词典数据
+   许可证：MIT License
+   来源：https://github.com/skywind3000/ECDICT
+   用途：单词、音标、释义、词频、考试标签、牛津3000核心词标记
+   字段：word, phonetic, translation, definition, pos, collins, oxford, tag, bnc, frq, exchange
+
+2. WordNet 3.1 — 同义词数据库
+   许可证：WordNet 3.1 License (Princeton University)
+   来源：https://wordnet.princeton.edu/
+   用途：同义词组（synset）关系，用于自动归组"我的同义词本"
+
+版权声明：
+- 以上数据按其原始许可证使用，版权归原作者所有。
+- 本应用不包含任何牛津词典商业数据。
+- 当前版本使用样本数据，真实词库数据（words.json）就绪后自动加载。
